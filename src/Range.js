@@ -2,23 +2,23 @@ import React, { useState, useEffect } from 'react';
 
 
 
-function Range(handlerOnClick, minVal, maxVal, stepVal, initVal, flip){
-  const [value, setValue] = useState(initVal);
+function Range(props){
+  const [value, setValue] = useState(props.initVal);
   const [eventDesc, setEventDesc] = useState("");
-  const range = maxVal - minVal;
+  const range = props.maxVal - props.minVal;
   const center = range/2;
 
   function convert(value) {
-    if(flip){
-      value = range - (value - minVal) + minVal
+    if(props.flip){
+      value = range - (value - props.minVal) + props.minVal
     }
     return value;
   }
 
   function handlerWrapper(){
-    console.log('handlerWrapper');
-    if(handlerOnClick){
-      handlerOnClick(convert(value));
+    console.log('handlerWrapper:'+props.handlerOnClick);
+    if(props.handlerOnClick){
+      props.handlerOnClick(convert(value));
     }
   }
 
@@ -41,13 +41,14 @@ function Range(handlerOnClick, minVal, maxVal, stepVal, initVal, flip){
   return (
     <div>
       <input type="range"
-        min={minVal} max={maxVal} step={stepVal} defaultValue={initVal}
+        min={props.minVal} max={props.maxVal} step={props.stepVal} defaultValue={props.initVal}
         onClick={() => {handlerWrapper();}}
         onChange={(e) => {handleOnChange(e);}}
         onInput={(e) => {handleOnInput(e);}}
         onTouchStart={(e) => {handleOnTouchStart(e);}}
         onTouchEnd={(e) => {handleOnTouchEnd(e);}}
       />
+      <div>{value}</div>
     </div>
   );
 }

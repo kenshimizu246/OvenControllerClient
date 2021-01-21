@@ -1,59 +1,54 @@
-import React from 'react';
 import './App.css';
-import Range from './Range';
-import ControlButton from './ControlButton';
-import Distance from './Distance';
-import Compass from './Compass';
-import DriveButton from './DriveButton';
+
 import Connection from './Connection';
-import PowerSlider from './PowerSlider';
+import Range from './Range';
+import Temperature from './Temperature';
+import TempChart from './TempChart';
+import React, {useState, useEffect, useContext} from 'react';
+import { Chart } from 'react-charts';
+
+
+const urlParams = new URLSearchParams(window.location.search);
+const host = (urlParams.has('host') ? urlParams.get('host') : window.location.hostname);
+const port = (urlParams.has('port') ? urlParams.get('port') : '9012');
+console.log("connection:"+host+":"+port)
 
 var msgcnt = 0;
-var conn = new Connection('ws://' + window.location.hostname + ':9009', ['alexo']);
 
+//var conn = new Connection('ws://' + host + ':' + port, ['ovnctrl']);
+var conn = new Connection('ws://' + '192.168.1.71' + ':9012', ['ovnctrl']);
 
-function onSystemEvent(msg){
-  //var s = JSON.stringify(msg);
-  //console.log('onSystemEvent:'+s);
-}
-
-function onMessage(msg){
-  //var s = JSON.stringify(msg);
-  //console.log('onMessage:'+s);
-}
-
-//conn.on('MSG', onMessage.bind(this));
-//conn.on('SYS', onSystemEvent.bind(this));
-//console.log("add handler");
 
 conn.connect();
 
+const appInitValues = {
+  power: 120,
+  scale: 60
+};
+
+
+const context = React.createContext(appInitValues);
 
 function App() {
-  function handlerDrive(cmd){
-    msgcnt++;
-    const message = {
-      header: {
-        target: 'drive',
-        seq: msgcnt,
-      },
-      body: {
-        command: cmd,
-      },
-    }
-    const str = JSON.stringify(message)
-    conn.send(str);
-  }
+  //const context = useContext({power: 0, scale: 20});
+  //const context = useContext('power');
+  //console.log("app.context:"+context);
+//  useEffect(() => {
+//    conn.connect();
+//    return () => {
+//      conn.close();
+//    };
+//  }, []);
 
-  function handlerRangeCamY(value){
-    msgcnt++;
+  function handlerRangePower(value){
     const message = {
       header: {
-        target: 'servo',
+        type: 'command',
+        version: 1.0,
         seq: msgcnt,
       },
       body: {
-        id: 0,
+        command: "set_power",
         value: parseInt(value, 10),
       },
     }
@@ -61,120 +56,28 @@ function App() {
     conn.send(str);
   }
 
-  function handlerRangeCamX(value){
-    const message = {
-      header: {
-        target: 'servo',
-        seq: msgcnt,
-      },
-      body: {
-        id: 1,
-        value: parseInt(value, 10),
-      },
-    }
-    const str = JSON.stringify(message)
-    conn.send(str);
+  function handlerRangeChartScale(value){
+    console.log("Scale:"+value)
   }
 
-  function handlerDriveButton(cmd){
-    const message = {
-      header: {
-        target: 'drive',
-        seq: msgcnt,
-      },
-      body: {
-        command: cmd,
-      },
-    }
-    const str = JSON.stringify(message)
-    //console.log("message:"+str)
-    conn.send(str);
+  function handlerScaleChanged(value){
+    console.log("ScaleChanged:"+value)
   }
-
-  function handlerRangeSensor(value){
-    const message = {
-      header: {
-        target: 'servo',
-        seq: msgcnt,
-      },
-      body: {
-        id: 2,
-        value: parseInt(value, 10),
-      },
-    }
-    const str = JSON.stringify(message)
-    conn.send(str);
-  }
-
-  function handlerControlButton(value){
-    //console.log("handleControlButton:value:"+value);
-  }
-
-  let controlb = ControlButton(handlerControlButton, true);
-  let rangeCamX = Range(handlerRangeCamY, 125, 540, 1, 300, true);
-  let rangeCamY = Range(handlerRangeCamX, 125, 450, 1, 300, true);
-  let rangeSens = Range(handlerRangeSensor, 100, 550, 1, 300, false);
-
-  let servoSlider = PowerSlider(handlerRangeSensor, 'srv01', conn, 100, 550, 1, 325, 320, 20);
-
-  let vl53l0x = Distance(conn, 'vl53l0x', 0, 'VL53L0X', 'Time of Flight distance sensor');
-  let hcsr04 = Distance(conn, 'hcsr04', 0, 'HCSR04', 'Ultrasonic Sensor');
-  let headingXYZ = Compass(conn, 'gy271', 0, 'GY271', 'Three Axis Magnetic Field Sensor');
-  let stop = DriveButton(handlerDriveButton, 'STOP', 'STOP', false);
-  let forward = DriveButton(handlerDriveButton, 'FORWARD', 'FORWARD', false);
-  let backward = DriveButton(handlerDriveButton, 'BACKWARD', 'BACKWARD', false);
-  let left = DriveButton(handlerDriveButton, 'LEFT', 'LEFT', false);
-  let right = DriveButton(handlerDriveButton, 'RIGHT', 'RIGHT', false);
 
   return (
     <div className="App">
-     <div className="title">Ashlynn</div>
-     <div className="monitorControlX">
-       <div className="monitorControlY">
-         <div className='monitor'>
-           <img src="http://192.168.1.68:8081" alt='monitor'/>
-         </div>
-         <div className="rangeCamY">
-           {rangeCamY}
-         </div>
-       </div>
-       <div className="rangeCamX">
-         {rangeCamX}
-       </div>
-     </div>
-     <div className="rangeSens">
-       {rangeSens}
-     </div>
-     <div className='controllerRow'>
-       <div></div>
-       <div>{forward}</div>
-       <div></div>
-     </div>
-     <div className='controllerRow'>
-       <div>{left}</div>
-       <div>{stop}</div>
-       <div>{right}</div>
-     </div>
-     <div className='controllerRow'>
-       <div></div>
-       <div>{backward}</div>
-       <div></div>
-     </div>
-     <div>
-       {vl53l0x}
-     </div>
-     <div>
-       {hcsr04}
-     </div>
-     <div>
-       {headingXYZ}
-     </div>
-     <div>
-       {servoSlider}
-     </div>
+      <div className="App">
+        <Temperature conn={conn} source='Temperature' id='0' label='Temperature' description='Temperature'/>
+      </div>
+      <div className="App">
+        <Range handlerOnClick={handlerRangePower} 
+               minVal={0} maxVal={2000} stepVal={10} initVal={150} flip={false} />
+      </div>
+      <div className="App">
+        <TempChart conn={conn} />
+      </div>
     </div>
   );
 }
 
-export{conn};
 export default App;
